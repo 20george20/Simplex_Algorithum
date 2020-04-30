@@ -112,3 +112,63 @@ def convert(eq):
         for i in eq:
             eq = float(i)
         return eq
+
+def convert_min(table):
+    for i in table[-1,:-2]:
+        table[-1,:-2] = -1*i
+    #table[-1, :-2] = everything but the last 2 values in the last row
+    table[-1,-1] = -1*table[-1,-1]
+    return table
+
+#returns the variables we need in terms of x1, x2, x3... according to the dimensions of the table
+def gen_var(table):
+    lc = len(table[0, :])
+    lr = len(table[:, 0])
+    var = lc - lr - 1
+    v = []
+    for i in range(var):
+        v.append('x' + str(i+1))
+    return v
+
+#The user can't add too many constraints because we need at least one row of all zeros in the matricies to put the solution for all of the variables in
+#so this method makes sure there are atleast two row of all zeros in the matricies before another constraint can be added.
+def add_cons(table):
+    lr = len(table[:,0])
+    empty = []
+    for i in range(lr):
+        total = 0
+        for j in table[i,:]:
+            total += j**2
+            #I had to square it because if not then the values might just cancel each other out and appear as all zeros when they're not
+        if total == 0:
+            empty.append(total)
+    if len(empty)>1:
+        return True
+    else:
+        return False
+
+#this function is taking the constraint and converting it into the appropriate format to be added into the matrix
+def constrain(table,eq):
+    if add_cons(table) == True:
+        lc = len(table[0,:])
+        lr = len(table[:,0])
+        var = lc - lr -1
+        j = 0
+        while j < lr:
+            row_check = table[j,:]
+            total = 0
+            for i in row_check:
+                total += float(i**2)
+            if total == 0:
+                row = row_check
+                break
+            j +=1
+        eq = convert(eq)
+        i = 0
+        while i<len(eq)-1:
+            row[i] = eq[i]
+            i +=1
+        row[-1] = eq[-1]
+        row[var+j] = 1
+    else:
+        print('Cannot add another constraint.')
