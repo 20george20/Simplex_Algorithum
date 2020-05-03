@@ -172,3 +172,35 @@ def constrain(table,eq):
         row[var+j] = 1
     else:
         print('Cannot add another constraint.')
+
+#I have to make sure that the last row in the matrix is empty, all zeros, so that I can add the objective function in the last row after all the constraints
+def add_obj(table):
+    lr = len(table[:,0])
+    empty = []
+    for i in range(lr):
+        total = 0
+        for j in table[i,:]:
+            total += j**2
+        if total == 0:
+            empty.append(total)
+    if len(empty)==1:
+        return True
+    else:
+        return False
+
+#this actually adds the objective function if add_obj returns true
+def obj(table,eq):
+    if add_obj(table)==True:
+        eq.split(',')
+        for i in eq:
+            eq = float(i)
+        lr = len(table[:,0])
+        row = table[lr-1,:]
+        i = 0
+        while i<len(eq)-1:
+            row[i] = eq[i]*-1
+            i +=1
+        row[-2] = 1
+        row[-1] = eq[-1]
+    else:
+        print('You must finish adding constraints before the objective function can be added.')
