@@ -46,7 +46,7 @@ most negative number it finds the smallest ratio between the element in the colu
 last column. total is the list of all of these ratios and the smallest entry in total is our first pivot point."""
 def loc_piv_r(table):
     total = []
-    r = find_neg_r(table)
+    r = find_neg_bottom_row(table)
     row = table[r,:-1]
     m = min(row)
     c = np.where(row == m)[0][0]
@@ -64,7 +64,7 @@ def loc_piv_r(table):
 def loc_piv(table):
     if next_round(table):
         total = []
-        n = find_neg(table)
+        n = find_neg_right_col(table)
         for i,b in zip(table[:-1,n],table[:-1,-1]):
             if b/i >0 and i**2>0:
                 total.append(b/i)
@@ -103,20 +103,16 @@ def convert(eq):
     if 'G' in eq:
         g = eq.index('G')
         del eq[g]
-        for i in eq:
-            eq = float(i)*-1
+        eq = [float(i)*-1 for i in eq]
         return eq
     if 'L' in eq:
         l = eq.index('L')
         del eq[l]
-        for i in eq:
-            eq = float(i)
+        eq = [float(i) for i in eq]
         return eq
 
 def convert_min(table):
-    for i in table[-1,:-2]:
-        table[-1,:-2] = -1*i
-    #table[-1, :-2] = everything but the last 2 values in the last row
+    table[-1,:-2] = [-1*i for i in table[-1,:-2]]
     table[-1,-1] = -1*table[-1,-1]
     return table
 
@@ -191,9 +187,7 @@ def add_obj(table):
 #this actually adds the objective function if add_obj returns true
 def obj(table,eq):
     if add_obj(table)==True:
-        eq.split(',')
-        for i in eq:
-            eq = float(i)
+        eq = [float(i) for i in eq.split(',')]
         lr = len(table[:,0])
         row = table[lr-1,:]
         i = 0
@@ -204,3 +198,59 @@ def obj(table,eq):
         row[-1] = eq[-1]
     else:
         print('You must finish adding constraints before the objective function can be added.')
+
+#so this method is using the pivot methods to see if first more pivots are needed and if so it pivots around the identified element until there
+#are no more negative elements in the last row or column, then it returns the max value of the objective function and all of the variables
+def maxz(table):
+    while next_round_r(table)==True:
+        table = pivot(loc_piv_r(table)[0],loc_piv_r(table)[1],table)
+    while next_round(table)==True:
+        table = pivot(loc_piv(table)[0],loc_piv(table)[1],table)
+    lc = len(table[0,:])
+    lr = len(table[:,0])
+    var = lc - lr -1
+    i = 0
+    val = {}
+    for i in range(var):
+        col = table[:,i]
+        s = sum(col)
+        m = max(col)
+        if float(s) == float(m):
+            loc = np.where(col == m)[0][0]
+            val[gen_var(table)[i]] = table[loc,-1]
+        else:
+            val[gen_var(table)[i]] = 0
+    val['max'] = table[-1,-1]
+    return val
+
+#this is the same as the maxz method excpt for a minimization problems
+def minz(table):
+    table = convert_min(table)
+    while next_round_r(table)==True:
+        table = pivot(loc_piv_r(table)[0],loc_piv_r(table)[1],table)
+    while next_round(table)==True:
+        table = pivot(loc_piv(table)[0],loc_piv(table)[1],table)
+    lc = len(table[0,:])
+    lr = len(table[:,0])
+    var = lc - lr -1
+    i = 0
+    val = {}
+    for i in range(var):
+        col = table[:,i]
+        s = sum(col)
+        m = max(col)
+        if float(s) == float(m):
+            loc = np.where(col == m)[0][0]
+            val[gen_var(table)[i]] = table[loc,-1]
+        else:
+            val[gen_var(table)[i]] = 0
+            val['min'] = table[-1,-1]*-1
+    return val
+
+#main method
+if __name__ == "__main__":
+    m = makeMatrix(2,2)
+    constrain(m,'2,-1,G,10')
+    constrain(m,'1,1,L,20')
+    obj(m,'5,10,0')
+    print(maxz(m))
